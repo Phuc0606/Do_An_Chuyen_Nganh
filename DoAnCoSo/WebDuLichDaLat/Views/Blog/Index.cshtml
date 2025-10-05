@@ -1,0 +1,118 @@
+﻿@model IEnumerable<WebDuLichDaLat.Models.BlogPost>
+@{
+    ViewData["Title"] = "Tin tức";
+}
+
+@section Styles {
+    <style>
+        .blog-section {
+            padding: 80px 0;
+            background-color: #f9f9f9;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #222;
+        }
+
+        .card {
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            border: none;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+        }
+
+            .card:hover {
+                transform: translateY(-6px);
+                box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
+            }
+
+        .card-img-top {
+            height: 230px;
+            object-fit: cover;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+
+
+        .card-text {
+            font-size: 0.95rem;
+            color: #666;
+        }
+
+        .btn-link {
+            color: #e50914;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+            .btn-link:hover {
+                text-decoration: underline;
+            }
+    </style>
+}
+
+<section class="blog-section h-100 d-flex flex-column">
+    <div class="container">
+        <div class="row mb-5 text-center">
+            <div class="col-lg-12">
+                <h2 class="section-title">Bài viết mới nhất</h2>
+                <p class="lead text-muted">Cập nhật các tin tức và xu hướng công nghệ từ VNTRAVEL</p>
+            </div>
+        </div>
+
+        <div class="row">
+            @if (Model != null && Model.Any())
+            {
+                foreach (var post in Model)
+                {
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card h-100">
+                            <img src="@Url.Content($"~/Images/{System.IO.Path.GetFileName(post.ImageUrl)}")"
+                                 class="card-img-top" alt="@post.Title" />
+                            <div class="card-body">
+                                <span class="text-muted small d-block mb-2">
+                                    @post.PostedDate.ToString("dd MMM yyyy")
+                                </span>
+                                <h5 class="card-title">@post.Title</h5>
+                                <p class="card-text">
+                                    @((post.Content?.Length > 100) ? post.Content.Substring(0, 100) + "..." : post.Content)
+                                </p>
+                                <a asp-action="Detail" asp-route-id="@post.Id" class="btn btn-link">
+                                    Đọc thêm <i class="bi bi-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="col-12 text-center text-muted">
+                    <p>Hiện chưa có bài viết nào.</p>
+                </div>
+            }
+
+            @if (User.IsInRole("Admin"))
+            {
+                <div class="text-end pe-5">
+                    <a asp-area="Admin" asp-controller="Blog" asp-action="Index" class="btn btn-success">
+                        <i class="bi bi-plus-circle"></i> Quản lý
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</section>

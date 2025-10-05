@@ -1,0 +1,175 @@
+﻿@using WebDuLichDaLat.Models
+@model IEnumerable<WebDuLichDaLat.Models.TouristPlace>
+
+
+
+@{
+    var categories = ViewBag.Categories as IEnumerable<WebDuLichDaLat.Models.Category>;
+    var Manufacturers = ViewBag.Manufacturers as IEnumerable<WebDuLichDaLat.Models.Region>;
+    var touristPlacesList = Model?.ToList() ?? new List<WebDuLichDaLat.Models.TouristPlace>();
+    var allTouristPlaces = ViewBag.AllTouristPlaces as IEnumerable<WebDuLichDaLat.Models.TouristPlace> ?? new List<WebDuLichDaLat.Models.TouristPlace>();
+
+
+}
+
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $(".banner-carousel").owlCarousel({
+                loop: true,
+                margin: 0,
+                nav: false,
+                dots: true, 
+                items: 1,
+                autoplay: true,
+                autoplayTimeout: 5000,
+                autoplayHoverPause: true,
+                navText: ["<span class='carousel-control-prev-icon'></span>", "<span class='carousel-control-next-icon'></span>"]
+            });
+        });
+    </script>
+}
+
+
+
+<!-- Banner Section -->
+<section class="banner-section" style="position: relative; width: 100%; overflow: hidden; margin-top:50px;margin-block-end: 30px;">
+    <div class="banner-carousel owl-carousel owl-theme">
+
+        <!-- Slide 1 -->
+        <a href="https://vnexpress.net/colline-dalat-khach-san-view-toan-canh-da-lat-4887936.html" style="display: block; width: 100%; height: 500px;">
+            <div class="slide-item" style="position: relative; width: 100%; height: 100%; cursor: pointer;">
+                <div class="image-layer" style="
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: url('https://i1-dulich.vnecdn.net/2025/06/05/VNE-1-2-1-1749118635-8346-1749118854.jpg?w=1020&h=0&q=100&dpr=1&fit=crop&s=eB_-K2WyefpxuVA0MXLytw');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center center;
+"></div>
+
+                <div class="auto-container" style="position: relative; z-index: 2; color: white;">
+                    <div class="content-box text-center pt-5">
+                        <h2 style="opacity: 0;">The<br>Vn Technology</h2>
+                    </div>
+                </div>
+            </div>
+        </a>
+
+
+
+        <!-- Slide 2 -->
+        <a href="https://vnexpress.net/da-lat-diem-den-cua-mo-hinh-cau-lac-bo-xa-xi-4906674.html" style="display: block; width: 100%; height: 500px;">
+            <div class="slide-item" style="position: relative; width: 100%; height: 100%; cursor: pointer;">
+                <div class="image-layer" style="
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: url('https://i1-dulich.vnecdn.net/2025/06/26/Haus1-1750949052-3042-1750949242.png?w=1020&h=0&q=100&dpr=1&fit=crop&s=amdaJXbmIJ-CUf_ZyKEWww');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center center;
+"></div>
+
+                <div class="auto-container" style="position: relative; z-index: 2; color: white;">
+                    <div class="content-box text-center pt-5">
+                        <h2 style="opacity: 0;">The<br>Vn Technology</h2>
+                    </div>
+                </div>
+            </div>
+        </a>
+
+        <!-- Slide 3 -->
+        <a href="https://vnexpress.net/ben-xe-da-lat-4886520.html" style="display: block; width: 100%; height: 500px;">
+            <div class="slide-item" style="position: relative; width: 100%; height: 100%; cursor: pointer;">
+                <div class="image-layer" style="
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: url('https://i1-vnexpress.vnecdn.net/2025/05/15/Ben-xe-Da-Lat-1747307171-8064-1747307205.jpg?w=1020&h=0&q=100&dpr=1&fit=crop&s=0b29hLK6pO81AOa0I9r9_A');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center center;
+"></div>
+
+                <div class="auto-container" style="position: relative; z-index: 2; color: white;">
+                    <div class="content-box text-center pt-5">
+                        <h2 style="opacity: 0;">The<br>Vn Technology</h2>
+                    </div>
+                </div>
+            </div>
+        </a>
+
+
+        <!-- Slide 4 -->
+        <a href="https://vnexpress.net/nhung-don-bay-ty-usd-tai-da-lat-4872086.html" style="display: block; width: 100%; height: 500px;">
+            <div class="slide-item" style="position: relative; width: 100%; height: 100%; cursor: pointer;">
+                <div class="image-layer" style="
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: url('https://i1-vnexpress.vnecdn.net/2025/04/10/NH1-1744247826-8127-1744248055.png?w=1020&h=0&q=100&dpr=1&fit=crop&s=LbOfkFkyXCZ2Aasb6EwTmA');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center center;
+"></div>
+
+                <div class="auto-container" style="position: relative; z-index: 2; color: white;">
+                    <div class="content-box text-center pt-5">
+                        <h2 style="opacity: 0;">The<br>Vn Technology</h2>
+                    </div>
+                </div>
+            </div>
+        </a>
+
+
+</section>
+
+
+<div class="row g-4" style="margin-top:40px">
+    @if (Model != null && Model.Any())
+    {
+        foreach (var touristPlace in Model)
+        {
+            <div class="col-lg-3 col-md-6 col-sm-12 wow fadeInUp animated" data-wow-delay="300ms" data-wow-duration="1500ms">
+                <div class="inner-box hvr-bob"
+                     style="cursor: pointer;"
+                     onclick="window.location.href='@Url.Action("Display", "TouristPlace", new { id = touristPlace.Id })'">
+                    <figure class="image-box mb-0">
+                        <img src="@touristPlace.ImageUrl" alt="@touristPlace.Name" style="width: 100%; height: 250px; object-fit: cover;" />
+                    </figure>
+
+                    <!--Overlay Box-->
+                    <div class="overlay-box">
+                        <div class="overlay-inner text-center text-white">
+                            <div class="content">
+                                <h4>@touristPlace.Name</h4>
+                                <p><strong>Hãng:</strong> @(touristPlace.Region?.Name ?? "Chưa có")</p>
+                                <p><strong>Loại:</strong> @(touristPlace.Category?.Name ?? "Chưa có")</p>
+                                <p><strong></strong> @(string.IsNullOrWhiteSpace(touristPlace.Description) ? "Chưa có" : touristPlace.Description)</p>
+                                @if (User.IsInRole("Admin"))
+                                {
+                                    <div class="d-flex justify-content-center gap-2 mt-2 flex-wrap">
+                                        <a asp-area="Admin" asp-controller="touristPlace" asp-action="Update" asp-route-id="@touristPlace.Id" class="btn btn-outline-light btn-sm">Sửa</a>
+                                        <a asp-area="Admin" asp-controller="touristPlace" asp-action="Delete" asp-route-id="@touristPlace.Id" class="btn btn-danger btn-sm"
+                                           onclick="event.stopPropagation(); return confirm('Bạn có chắc muốn xóa sản phẩm này không?');">Xóa</a>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <p class="text-white">Không có địa điểm nào.</p>
+    }
+</div>
+
+
+
+
+
+
+
+

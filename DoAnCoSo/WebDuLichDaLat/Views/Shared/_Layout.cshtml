@@ -1,0 +1,170 @@
+﻿@using Microsoft.AspNetCore.Identity
+@using WebDuLichDaLat.Models
+@inject SignInManager<User> SignInManager
+@inject UserManager<User> UserManager
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - WebDuLichDaLat</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/hover.css/2.3.1/css/hover-min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.carousel.min.css" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+
+<body class="d-flex flex-column min-vh-100 ">
+
+    <!-- IMAGE BACKGROUND -->
+    <div style="
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        min-width: 100%;
+        min-height: 100%;
+        z-index: -1;
+        background-image: url('@Url.Content("~/Images/Background.png")');
+        background-size: cover;
+        background-position: center;">
+    </div>
+
+    <header class="bg-dark text-white">
+        <nav class="navbar navbar-expand-lg navbar-dark">
+            <div class="container-fluid px-lg-5 d-flex justify-content-between align-items-center">
+                <!-- Logo -->
+                <a asp-area="" asp-controller="touristPlace" asp-action="Index" class="navbar-brand">
+                    <span style="font-weight: bold; font-size: 50px; letter-spacing: 1px; color: #e50914;">
+                        Nhom9<span style="color: white;">DaLat</span>
+                    </span>
+                </a>
+
+                <!-- Tìm kiếm -->
+                <form id="searchForm" method="get" asp-area="" asp-controller="TouristPlace" asp-action="Search" class="d-flex">
+                    <input type="text" class="form-control me-2" id="searchInput" name="query" placeholder="Tìm Địa điểm...">
+                    <i class="fas fa-search"></i>
+                </form>
+
+                <!-- Toggle button for mobile -->
+                <button class="navbar-toggler ms-3" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
+
+            <!-- Menu -->
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-lg-center gap-0">
+                    @await Component.InvokeAsync("CategoryMenu")
+                    @await Component.InvokeAsync("RegionMenu")
+
+                    <!-- Mục mới: Gợi ý du lịch -->
+                    <li class="nav-item">
+                        <a class="nav-link text-white @(ViewContext.RouteData.Values["controller"]?.ToString() == "TripPlanner" ? "fw-bold text-danger" : "")"
+                           asp-area="" asp-controller="TripPlanner" asp-action="Index">
+                            Gợi ý du lịch
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link text-white @(ViewContext.RouteData.Values["controller"]?.ToString() == "Blog" ? "fw-bold text-danger" : "")"
+                           asp-area="" asp-controller="Blog" asp-action="Index">
+                            Blog
+                        </a>
+                    </li>
+
+                    @if (!User.IsInRole("Admin"))
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link position-relative text-white" asp-area="" asp-controller="Contact" asp-action="Index">
+                                Contact
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link position-relative text-white" asp-area="" asp-controller="Favorite" asp-action="Index">
+                                Yêu thích
+                            </a>
+                        </li>
+                    }
+
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle text-warning fw-bold ms-3" id="navbarDropdown"
+                               role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-person-circle"></i> Admin
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" asp-area="Admin" asp-controller="TouristPlace" asp-action="Manage">
+                                        <i class="bi bi-box-seam"></i> Quản lý địa điểm du lịch
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-area="Admin" asp-controller="Category" asp-action="Index">
+                                        <i class="bi bi-box-seam"></i> Quản lý danh mục
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-area="Admin" asp-controller="TouristPlace" asp-action="Add">
+                                        <i class="bi bi-plus-square"></i> Thêm địa điểm
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-area="Admin" asp-controller="Category" asp-action="Add">
+                                        <i class="bi bi-plus-square"></i> Thêm danh mục
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-area="Admin" asp-controller="Contact" asp-action="Index">
+                                        <i class="bi bi-envelope-fill"></i> Quản lý liên hệ
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    }
+
+                    @await Html.PartialAsync("_LoginPartial")
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <script>
+        // JS xử lý tìm kiếm
+        document.getElementById("searchForm").addEventListener("submit", function (event) {
+            const keyword = document.getElementById("searchInput").value.trim();
+            if (keyword === "") {
+                event.preventDefault();
+            }
+        });
+    </script>
+
+    <!-- BODY CHUNG KHUNG -->
+    <main class="flex-fill py-5 pb-5 d-flex flex-column">
+        <div class="container flex-grow-1">
+            @RenderBody()
+            @RenderSection("Styles", required: false)
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer text-muted mt-auto pt-5">
+        @await Html.PartialAsync("_BlogFooter")
+    </footer>
+
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/wow/1.1.2/wow.min.js"></script>
+    <script>new WOW().init();</script>
+    @await RenderSectionAsync("Scripts", required: false)
+
+</body>
+</html>

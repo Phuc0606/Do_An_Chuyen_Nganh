@@ -1,0 +1,314 @@
+@model WebDuLichDaLat.Models.TripPlannerViewModel
+@using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    ViewData["Title"] = "Lập kế hoạch du lịch tối ưu";
+
+    var touristPlacesJson = ViewBag.TouristPlacesJson as string;
+}
+<h2 class="mb-4">@ViewData["Title"]</h2>
+
+<div id="map" style="height: 400px; width: 100%; margin-bottom: 20px;"></div>
+
+<form asp-action="Index" method="post" id="tripForm" class="mb-5">
+    <input type="hidden" asp-for="DistanceKm" id="DistanceKm" />
+
+    <div class="form-group mb-3">
+        <label class="form-label fw-bold">Vị trí bắt đầu:</label>
+        <input asp-for="StartLocation" id="startLocation" class="form-control" placeholder="Nhập địa chỉ xuất phát..." autocomplete="off" />
+    </div>
+
+    <!-- Lọc danh mục + Địa điểm muốn đến -->
+    <div class="row g-3 mb-3">
+        <div class="col-md-3">
+            <label class="form-label fw-bold">Lọc danh mục:</label>
+            <select asp-for="SelectedCategoryId" asp-items="@(new SelectList(Model.Categories,"Id","Name"))" class="form-select form-select-sm" id="CategoryDropdown">
+                <option value="">-- Tất cả --</option>
+            </select>
+        </div>
+        <div class="col-md-9">
+            <label class="form-label fw-bold">Địa điểm muốn đến:</label>
+            <select asp-for="SelectedTouristPlaceIds" class="form-control" id="TouristPlaceDropdown" multiple size="3">
+                @foreach (var tp in Model.TouristPlaces)
+                {
+                    <option value="@tp.Id" data-lat="@tp.Latitude" data-lng="@tp.Longitude" data-category="@tp.CategoryId">@tp.Name</option>
+                }
+            </select>
+            <small id="selectedCount" class="text-muted"></small>
+            <button type="button" class="btn btn-sm btn-outline-danger mt-1" id="clearAllBtn">Xoá tất cả</button>
+        </div>
+    </div>
+
+    <div class="form-group mb-3">
+        <label class="form-label fw-bold">Ngân sách (VNĐ):</label>
+        <input asp-for="Budget" class="form-control" type="number" min="0" required />
+    </div>
+
+    <div class="form-group mb-3">
+        <label class="form-label fw-bold">Phương tiện:</label>
+        <select asp-for="SelectedTransportId" class="form-control" asp-items="Model.TransportSelectList">
+            <option value="">-- Tất cả phương tiện --</option>
+        </select>
+    </div>
+
+    <div class="form-group mb-3">
+        <label class="form-label fw-bold">Số ngày dự kiến:</label>
+        <input asp-for="NumberOfDays" class="form-control" type="number" min="1" value="1" required />
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-2">Tìm gợi ý</button>
+
+</form>
+
+
+@if (Model.Suggestions != null && Model.Suggestions.Count > 0)
+
+{
+    <div class="mt-4">
+        <h4 class="mb-3">Gợi ý chi phí tối ưu:</h4>
+        <div class="accordion" id="accordionSuggestions">
+            @for (int i = 0; i < Model.Suggestions.Count; i++)
+            {
+                var suggestionId = $"suggestion{i}";
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading-@suggestionId">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-@suggestionId">
+                            Phương án gợi ý @(i + 1)
+                        </button>
+                    </h2>
+                    <div id="collapse-@suggestionId" class="accordion-collapse collapse" data-bs-parent="#accordionSuggestions">
+                        <div class="accordion-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <canvas id="chart-@suggestionId" style="max-width: 320px; max-height: 320px;"></canvas>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="suggestion-wrapper">@Html.Raw(Model.Suggestions[i])</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+<script>
+    var touristPlaces = @Html.Raw(touristPlacesJson ?? "[]");
+    var map;
+    var markers = [];
+    var routingControl;
+
+    function initMap() {
+        // Trigger initial filter so places reflect current category on page load
+        setTimeout(function(){ $('#CategoryDropdown').trigger('change'); }, 0);
+        map = L.map('map').setView([
+            touristPlaces.length > 0 ? touristPlaces[0].Latitude : 11.9404,
+            touristPlaces.length > 0 ? touristPlaces[0].Longitude : 108.4583
+        ], 12);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(map);
+
+        touristPlaces.forEach(function (place) {
+            if (place.Latitude && place.Longitude) {
+                var marker = L.marker([place.Latitude, place.Longitude])
+                    .addTo(map)
+                    .bindPopup('<b>' + place.Name + '</b><br/>Bấm để chọn địa điểm này.')
+                    .on('click', function () {
+                        var dropdown = document.getElementById('TouristPlaceDropdown');
+                        for (var i = 0; i < dropdown.options.length; i++) {
+                            if (dropdown.options[i].value == place.Id) {
+                                dropdown.options[i].selected = true;
+                                break;
+                            }
+                        }
+                        $('#TouristPlaceDropdown').trigger('change');
+                        calculateDistance();
+                    });
+                markers.push(marker);
+            }
+        });
+    }
+
+    function calculateDistance() {
+        var start = document.getElementById('startLocation').value;
+        var dropdown = document.getElementById('TouristPlaceDropdown');
+        var selectedOptions = Array.from(dropdown.selectedOptions);
+
+        if (selectedOptions.length > 0 && start) {
+            var lat = selectedOptions[0].getAttribute('data-lat');
+            var lng = selectedOptions[0].getAttribute('data-lng');
+            if (lat && lng) {
+                var nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(start)}&limit=1&countrycodes=vn`;
+                fetch(nominatimUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.length > 0) {
+                            var startLat = parseFloat(data[0].lat);
+                            var startLng = parseFloat(data[0].lon);
+                            var endLat = parseFloat(lat);
+                            var endLng = parseFloat(lng);
+
+                            var osrmUrl = `https://router.project-osrm.org/route/v1/driving/${startLng},${startLat};${endLng},${endLat}?overview=full&geometries=geojson`;
+                            fetch(osrmUrl)
+                                .then(response => response.json())
+                                .then(routeData => {
+                                    if (routeData.routes && routeData.routes.length > 0) {
+                                        var distanceInKm = routeData.routes[0].distance / 1000;
+                                        document.getElementById('DistanceKm').value = distanceInKm.toFixed(2);
+                                        showRoute(startLat, startLng, endLat, endLng, routeData.routes[0].geometry);
+                                    } else {
+                                        var distance = calculateHaversineDistance(startLat, startLng, endLat, endLng);
+                                        document.getElementById('DistanceKm').value = distance.toFixed(2);
+                                    }
+                                });
+                        }
+                    });
+            }
+        }
+    }
+
+    function showRoute(startLat, startLng, endLat, endLng, geometry) {
+        if (routingControl) {
+            map.removeControl(routingControl);
+        }
+        var coordinates = geometry && geometry.coordinates ? geometry.coordinates.map(coord => [coord[1], coord[0]]) : [];
+        if (coordinates.length > 0) {
+            var routeLine = L.polyline(coordinates, { color: 'blue', weight: 4 }).addTo(map);
+            L.marker([startLat, startLng]).addTo(map);
+            L.marker([endLat, endLng]).addTo(map);
+            map.fitBounds(routeLine.getBounds());
+        }
+    }
+
+    function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
+        var R = 6371;
+        var dLat = (lat2 - lat1) * Math.PI / 180;
+        var dLon = (lon2 - lon1) * Math.PI / 180;
+        var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
+
+    window.onload = initMap;
+
+    $(document).ready(function () {
+        var $dropdown = $('#TouristPlaceDropdown');
+
+        // Init Select2
+        $dropdown.select2({
+            placeholder: 'Chọn địa điểm muốn đến',
+            width: '100%',
+            allowClear: true,
+            closeOnSelect: false
+        });
+
+        // Cập nhật số lượng địa điểm đã chọn
+        function updateSelectedCount() {
+            var count = $dropdown.val() ? $dropdown.val().length : 0;
+            $('#selectedCount').text('Đã chọn: ' + count);
+        }
+        updateSelectedCount();
+
+        $dropdown.on('change', function () {
+            updateSelectedCount();
+            calculateDistance();
+        });
+
+        // Lọc theo danh mục
+        $('#CategoryDropdown').on('change', function () {
+            var selectedCategory = $(this).val();
+            $("#TouristPlaceDropdown option").each(function () {
+                var categoryId = $(this).data('category');
+                if (selectedCategory === "" || categoryId == selectedCategory) {
+                    $(this).prop('disabled', false).show();
+                } else {
+                    if (!$(this).is(':selected')) {
+                        $(this).prop('disabled', true).hide();
+                    }
+                }
+            });
+            $dropdown.trigger('change.select2');
+        });
+
+        // Xóa tất cả
+        $('#clearAllBtn').on('click', function () {
+            $dropdown.val(null).trigger('change');
+        });
+
+        // Chart.js hiển thị theo dữ liệu thực tế từ DOM
+        function drawSuggestionCharts() {
+            document.querySelectorAll('#accordionSuggestions .accordion-item').forEach(function(item){
+                var wrapper = item.querySelector('.suggestion-wrapper .suggestion');
+                var canvas = item.querySelector('canvas');
+                if(!wrapper || !canvas) return;
+
+                var values = {
+                    food: parseFloat(wrapper.getAttribute('data-food') || '0'),
+                    hotel: parseFloat(wrapper.getAttribute('data-hotel') || '0'),
+                    local: parseFloat(wrapper.getAttribute('data-local') || '0'),
+                    ticket: parseFloat(wrapper.getAttribute('data-ticket') || '0'),
+                    misc: parseFloat(wrapper.getAttribute('data-misc') || '0')
+                };
+                var transport = parseFloat(wrapper.getAttribute('data-transport') || '0');
+
+                var dataset = [values.food, values.hotel, transport, values.ticket, values.misc];
+                var labels = ['Ăn uống', 'Khách sạn', 'Di chuyển', 'Vé', 'Phát sinh'];
+                var sum = dataset.reduce(function(a,b){ return a+b; }, 0) || 1;
+
+                new Chart(canvas, {
+                    type: 'pie',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: dataset,
+                            backgroundColor: ['#ff6384','#36a2eb','#ffcd56','#4bc0c0','#9966ff']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'top' },
+                            datalabels: {
+                                color: '#333',
+                                formatter: function(value, ctx){
+                                    var pct = (value / sum) * 100;
+                                    if(!value || pct < 1) return '';
+                                    return pct.toFixed(1) + '%\n' + new Intl.NumberFormat('vi-VN').format(value) + 'đ';
+                                },
+                                font: { weight: 'bold' }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context){
+                                        var v = context.parsed;
+                                        var pct = (v / sum) * 100;
+                                        return context.label + ': ' + new Intl.NumberFormat('vi-VN').format(v) + 'đ (' + pct.toFixed(1) + '%)';
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    plugins: [ChartDataLabels]
+                });
+            });
+        }
+        drawSuggestionCharts();
+        document.getElementById('accordionSuggestions')?.addEventListener('shown.bs.collapse', drawSuggestionCharts);
+        });
+</script>
